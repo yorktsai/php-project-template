@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+
+<project name="kernel" basedir="." default="test">
+    <property name="build.dir" value="build"/>
+    <property name="build.doc.dir" value="${build.dir}/doc"/>
+    <property name="build.report.dir" value="${build.dir}/report"/>
+    <property name="build.dist.dir" value="${build.dir}/dist"/>
+    <property name="class.dir" value="class"/>
+    <property name="config.dir" value="config"/>
+    <property name="test.dir" value="test"/>
+    <property name="lib.dir" value="lib"/>
+    <property name="data.dir" value="data"/>
+    <property name="locale.dir" value="locale"/>
+    <property name="tmp.dir" value="tmp"/>
+    <property name="tmp.smarty.dir" value="${tmp.dir}/smarty"/>
+    <property name="tmp.routing.dir" value="${tmp.dir}/routing"/>
+    <property name="analysis.dirs" value="${class.dir} ${config.dir} ${test.dir}"/>
+
+    <fileset id="src.dirs" dir=".">
+        <include name="${class.dir}/**/*.php"/>
+        <include name="${config.dir}/**/*.php"/>
+    </fileset>
+
+    <target name="prepare-tmp">
+        <delete dir="${tmp.dir}" />
+        <mkdir dir="${tmp.dir}"/>
+        <!-- smarty -->
+        <mkdir dir="${tmp.smarty.dir}"/>
+        <mkdir dir="${tmp.smarty.dir}/templates"/>
+        <mkdir dir="${tmp.smarty.dir}/templates_c"/>
+        <mkdir dir="${tmp.smarty.dir}/cache"/>
+        <mkdir dir="${tmp.smarty.dir}/configs"/>
+        <!-- routing -->
+        <mkdir dir="${tmp.routing.dir}"/>
+        <chmod mode="0777">
+            <fileset dir="${tmp.smarty.dir}" />
+            <fileset dir="${tmp.routing.dir}" />
+	    </chmod>
+    </target>
+
+    <target name="init" depends="prepare-tmp">
+        <mkdir dir="${build.doc.dir}"/>
+        <mkdir dir="${build.report.dir}/test"/>
+        <mkdir dir="${build.report.dir}/coverage"/>
+        <mkdir dir="${build.dist.dir}"/>
+    </target>
+
+    <target name="update" >
+        <exec command="git pull" dir="." />
+        <phingcall target="prepare-tmp" />
+    </target>
+
+    <!--
+        Light-weight test, without coverage analysis
+    -->
+    <target name="light_test" depends="init">
+        <exec command="vendor/bin/phpunit test" passthru="true"/>
+    </target>
+
+
+    <target name="test" depends="init">
+        <exec command="vendor/bin/phpunit --coverage-html ${build.report.dir}/coverage --log-junit ${build.report.dir}/test/testsuites.xml test" passthru="true"/>
+    </target>
+
+    <target name="doc" depends="init">
+        <exec command="php tools/phpdoctor/phpdoc.php config/phpdoctor.ini" />
+        <exec command="cp -p tools/phpdoctor/doclets/standard/stylesheet.css ${build.doc.dir}/apidocs/" />
+    </target>
+
+    <target name="sloccount" depends="init">
+        <exec command="sloccount --duplicates --wide --details ${analysis.dirs} > ${build.report.dir}/sloccount.sc" />
+    </target>
+
+    <target name="analysis" depends="sloccount" />
+
+    <target name="dist">
+        <exec command="cp -r ${class.dir} ${build.dist.dir}/" />
+        <exec command="cp -r ${config.dir} ${build.dist.dir}/" />
+        <exec command="cp -r ${lib.dir} ${build.dist.dir}/" />
+        <exec command="cp -r ${data.dir} ${build.dist.dir}/" />
+        <exec command="cp -r ${locale.dir} ${build.dist.dir}/" />
+        <exec command="cp -rp ${tmp.dir} ${build.dist.dir}/" />
+    </target>
+
+    <target name="clean">
+        <delete dir="build" />
+        <delete dir="tmp" />
+    </target>
+
+    <target name="prepare-ci">
+        <exec command="composer install --dev" passthru="true"/>
+    </target>
+
+    <target name="ci" depends="prepare-ci, clean, init, test, analysis, doc" />
+
+    <target name="release" depends="clean, init, dist" />
+
+     <target name="lint">
+         <phplint cachefile=".php_lint_cache" level="info">
+             <fileset dir="./">
+                 <include name="class/**/*.php"/>
+                 <include name="config/**/*.php"/>
+                 <include name="lib/**/*.php"/>
+                 <include name="test/**/*.php"/>
+             </fileset>
+         </phplint>
+     </target>
+</project>

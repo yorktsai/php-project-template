@@ -1,0 +1,6 @@
+#!/bin/sh
+
+rm -rf gen-php
+
+thrift -r --gen php:server -out class thrift/scribe.thrift
+thrift -r --gen php:server -out class thrift/commons.thrift

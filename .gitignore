@@ -1,0 +1,10 @@
+/build
+/tmp
+/.project
+/.settings
+/.buildpath
+/.php_lint_cache
+/release
+/vendor
+.DS_Store
+*.pyc
