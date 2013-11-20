@@ -1,8 +1,6 @@
 <?php
 namespace York\Kernel\Utils;
 
-use York\Kernel\Utils\StringUtils;
-
 class CollectionUtils
 {
     public static function isVarDumpEquals($var1, $var2)
